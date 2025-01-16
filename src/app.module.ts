@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common'
+/* eslint-disable prettier/prettier */
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { ConfigurationModule } from './configuration/configuration.module'
@@ -7,6 +8,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
 import { UsersModule } from './users/users.module'
 import { AuthModule } from './auth/auth.module'
 import { ChatsModule } from './chats/chats.module';
+import { FriendModule } from './friend/friend.module';
+import { AuthMiddleware } from './auth/auth.middleware'
 
 @Module({
   imports: [
@@ -27,9 +30,16 @@ import { ChatsModule } from './chats/chats.module';
     ConfigurationModule,
     UsersModule,
     AuthModule,
-    ChatsModule
+    ChatsModule,
+    FriendModule
   ],
   controllers: [AppController],
   providers: [AppService]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  public configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(AuthMiddleware)
+      .forRoutes('*')
+  }
+}

@@ -1,8 +1,8 @@
 /* eslint-disable prettier/prettier */
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Messages } from './entities/messages.entity'
-import { Repository } from 'typeorm'
+import { Repository, UpdateResult } from 'typeorm'
 import { CreateMessageDto } from './dto/create-messages.dto'
 
 @Injectable()
@@ -37,7 +37,7 @@ export class MessagesService {
     await this.messages.delete({ id })
   }
 
-  public async updateMessages(id: number, message: string) {
+  public async updateMessages(id: number, message: string): Promise<UpdateResult> {
     return await this.messages.update({ id }, { message })
   }
 
@@ -49,7 +49,7 @@ export class MessagesService {
     })
   }
 
-  public async findAll(id: number) {
+  public async findAll(id: number): Promise<Messages[]> {
     return await this.messages.find({
       where: {
         chatId: id

@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body, Patch, Param, Delete, ValidationPipe, UseGuards, NotFoundException, ConflictException } from '@nestjs/common'
+import { Controller, Get, Post, Body, Patch, Param, Delete, ValidationPipe, UseGuards, NotFoundException } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
@@ -11,14 +11,15 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post('/signup')
-  public async createUser(@Body(ValidationPipe) createUserDto: CreateUserDto): Promise<{ success: boolean }> {
+  public async createUser(@Body(ValidationPipe) createUserDto: CreateUserDto): Promise<{ success: boolean; body: number }> {
     const { tel, username, email } = createUserDto
 
     await this.usersService.checkUserTelAndUsernameAndEmail(tel, username, email)
-    await this.usersService.createUser(createUserDto)
+    const userId = await this.usersService.createUser(createUserDto)
 
     return {
-      success: true
+      success: true,
+      body: userId
     }
   }
 
@@ -50,12 +51,9 @@ export class UsersController {
   }
 
   @Patch(':id/update')
-  public async updateUserStatus(
-    @Param('id') id: number,
-    @Body(ValidationPipe) updateUserDto: UpdateUserDto
-  ): Promise<{ success: boolean }> {
+  public async updateUserStatus(@Param('id') id: number, @Body(ValidationPipe) updateUserDto: UpdateUserDto): Promise<{ success: boolean; userId: number }> {
     const user = await this.usersService.getOneUser(id)
-    
+
     if (!user) {
       throw new NotFoundException({
         success: false,
@@ -66,12 +64,13 @@ export class UsersController {
     await this.usersService.updateUserStatus(id, updateUserDto)
 
     return {
-      success: true
+      success: true,
+      userId: user.id
     }
   }
 
   @Delete(':id')
-  public async deleteUser(@Param('id') id: number,@Body() password: string): Promise<{ success: boolean }> {
+  public async deleteUser(@Param('id') id: number, @Body() password: string): Promise<{ success: boolean }> {
     const user = await this.usersService.getOneUser(id)
 
     if (!user) {

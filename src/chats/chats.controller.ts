@@ -5,14 +5,30 @@ import { CreateChatDto } from './dto/create-chat.dto'
 import { Chat } from './entities/chat.entity'
 import { User } from 'src/users/entities/user.entity'
 import { UpdateChatDto } from './dto/update-chat.dto'
+import { RoomTypeEnum } from 'src/util/enum/roomType.emum'
 
 @Controller('chats')
 export class ChatsController {
   constructor(private readonly chatsService: ChatsService) {}
 
-  @Post()
-  public async createChat(@Body(ValidationPipe) dto: CreateChatDto): Promise<Chat> {
-    return await this.chatsService.createChat(dto)
+  @Post('solo')
+  public async createSoloChat(@Body(ValidationPipe) dto: CreateChatDto): Promise<{ success: boolean; body: Chat}> {
+    const chat = await this.chatsService.createChat(dto, RoomTypeEnum.SOLO)
+
+    return {
+      success: true,
+      body: chat
+    }
+  }
+
+  @Post('group')
+  public async createGroupChat(@Body(ValidationPipe) dto: CreateChatDto): Promise<{ success: boolean; body: Chat}> {
+    const chat = await this.chatsService.createChat(dto, RoomTypeEnum.GROUP)
+
+    return {
+      success: true,
+      body: chat
+    }
   }
 
   @Get()

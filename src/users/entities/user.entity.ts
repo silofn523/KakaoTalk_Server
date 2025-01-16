@@ -2,6 +2,7 @@
 import { IsEmail, IsNotEmpty, IsOptional, IsPhoneNumber, IsString, Matches, MaxLength, MinLength } from 'class-validator'
 import { Chat } from 'src/chats/entities/chat.entity'
 import { Messages } from 'src/chats/messages/entities/messages.entity'
+import { Friend } from 'src/friend/entities/friend.entity'
 import { BaseEntity, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity({
@@ -69,4 +70,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Messages, (message) => message.author)
   public readonly messages: Messages
+
+  @OneToMany(() => Friend, (friend) => friend.user, { eager: true })
+  public readonly sentFriend: Friend[]
+
+  @OneToMany(() => Friend, (friend) => friend.friend, { eager: true })
+  public readonly receivedFriend: Friend[]
 }

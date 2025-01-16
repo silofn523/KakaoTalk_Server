@@ -1,13 +1,13 @@
 /* eslint-disable prettier/prettier */
 import { WebSocketGateway, SubscribeMessage, MessageBody, OnGatewayConnection, WebSocketServer, WsException, ConnectedSocket } from '@nestjs/websockets'
 import { ChatsService } from './chats.service'
-import { CreateChatDto } from './dto/create-chat.dto'
 import { Server, Socket } from 'socket.io'
 import { EnterChatDto } from './dto/enter-chat.dto'
 import { CreateMessageDto } from './messages/dto/create-messages.dto'
 import { MessagesService } from './messages/messages.service'
 import { UsersService } from 'src/users/users.service'
 import { InviteUserDto } from './dto/invite-user.dto'
+import { RoomTypeEnum } from 'src/util/enum/roomType.emum'
 
 @WebSocketGateway({
   namespace: 'chats'
@@ -28,6 +28,15 @@ export class ChatsGateway implements OnGatewayConnection {
 
   @SubscribeMessage('enter_chat')
   public async enterChat(@MessageBody() dto: EnterChatDto, @ConnectedSocket() socket: Socket) {
+    const user = await this.usersService.getOneUser(dto.userId)
+
+    if (!user) {
+      throw new WsException({
+        success: false,
+        message: `존재하지 않는 사용자 입니다. User ID : ${dto.userId}`
+      })
+    }
+    
     for (const chatId of dto.chatId) {
       const exists = await this.chatsService.checkIfChatExists(chatId)
 
@@ -35,6 +44,15 @@ export class ChatsGateway implements OnGatewayConnection {
         throw new WsException({
           success: false,
           message: `존재하지 않는 채팅방 입니다. Chat ID : ${chatId}`
+        })
+      }
+      const usersInChat = await this.chatsService.findUsersInChat(chatId)
+      const isUserInChat = usersInChat.some((u) => u.id === user.id)
+
+      if (!isUserInChat) {
+        throw new WsException({
+          success: false,
+          message: `채팅방에 없는 사용자 입니다. User ID : ${dto.userId}, Chat ID : ${chatId}`
         })
       }
     }
@@ -63,13 +81,21 @@ export class ChatsGateway implements OnGatewayConnection {
       })
     }
 
+    const isParticipant = chatExists.users.some((participant) => participant.id === dto.authorId)
+
+    if (!isParticipant) {
+      throw new WsException({
+        success: false,
+        message: `해당 채팅방에 참여하지 않은 사용자입니다.`
+      })
+    }
     const message = await this.messagesService.createMessage(dto)
 
     socket.to(message.chat.id.toString()).emit('receive_message', message.message)
   }
 
   @SubscribeMessage('invite_user')
-  public async inviteUser(@MessageBody() inviteDto: InviteUserDto, @ConnectedSocket() socket: Socket) {
+  public async inviteUser(@MessageBody() inviteDto: InviteUserDto, @ConnectedSocket() _socket: Socket) {
     const { chatId, userId } = inviteDto
 
     const chatExists = await this.chatsService.checkIfChatExists(chatId)
@@ -79,6 +105,13 @@ export class ChatsGateway implements OnGatewayConnection {
       throw new WsException({
         success: false,
         message: `존재하지 않는 채팅방 입니다. Chat ID : ${chatId}`
+      })
+    }
+
+    if (chatExists.roomType == RoomTypeEnum.SOLO) {
+      throw new WsException({
+        success: false,
+        message: `이 채팅방은 일 대 일 채팅방입니다. Chat ID : ${chatId}`
       })
     }
 

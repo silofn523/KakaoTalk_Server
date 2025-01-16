@@ -9,6 +9,7 @@ import { User } from 'src/users/entities/user.entity'
 import { WsException } from '@nestjs/websockets'
 import { InviteUserDto } from './dto/invite-user.dto'
 import { UpdateChatDto } from './dto/update-chat.dto'
+import { RoomTypeEnum } from 'src/util/enum/roomType.emum'
 
 @Injectable()
 export class ChatsService {
@@ -18,7 +19,7 @@ export class ChatsService {
     private readonly userService: UsersService
   ) {}
 
-  public async createChat(dto: CreateChatDto): Promise<Chat> {
+  public async createChat(dto: CreateChatDto, roomType: RoomTypeEnum): Promise<Chat> {
     for (let i = 0; i < dto.userId.length; i++) {
       const user = await this.userService.getOneUser(dto.userId[i])
 
@@ -31,7 +32,8 @@ export class ChatsService {
     }
     const chat = await this.chat.save({
       users: dto.userId.map((id) => ({ id })),
-      roomName: dto.roomName
+      roomName: dto.roomName,
+      roomType: roomType
     })
 
     return this.chat.findOne({
@@ -41,14 +43,12 @@ export class ChatsService {
     })
   }
 
-  public async checkIfChatExists(chatId: number): Promise<boolean> {
-    const exists = await this.chat.exists({
+  public async checkIfChatExists(chatId: number): Promise<Chat> {
+    return await this.chat.findOne({
       where: {
         id: chatId
       }
     })
-
-    return exists
   }
 
   public findAllChat(): Promise<Chat[]> {

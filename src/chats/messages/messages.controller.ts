@@ -2,6 +2,7 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, ValidationPipe } from '@nestjs/common'
 import { MessagesService } from './messages.service'
 import { ChatsService } from '../chats.service'
+import { Messages } from './entities/messages.entity'
 
 @Controller('chats/messages')
 export class MessagesController {
@@ -11,7 +12,10 @@ export class MessagesController {
   ) {}
 
   @Get(':id')
-  public async findAllChatMessage(@Param('id') id: number) {
+  public async findAllChatMessage(@Param('id') id: number): Promise<{
+    success: boolean
+    body: Messages[]
+  }> {
     const chatId = await this.chatsService.findOneChat(id)
     const message = await this.messagesService.findAll(id)
 

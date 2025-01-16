@@ -1,4 +1,5 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+/* eslint-disable prettier/prettier */
+import { ConflictException, Injectable } from '@nestjs/common'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -13,11 +14,11 @@ export class UsersService {
     private readonly user: Repository<User>
   ) {}
 
-  public async createUser(createUserDto: CreateUserDto): Promise<void> {
+  public async createUser(createUserDto: CreateUserDto): Promise<number> {
     const salt = await bcrypt.genSalt()
     const password = await this.hashPassword(createUserDto.password, salt)
 
-    await this.user.insert({
+    const user = await this.user.save({
       username: createUserDto.username,
       tel: createUserDto.tel,
       password,
@@ -26,6 +27,8 @@ export class UsersService {
       statusMessage: createUserDto.statusMessage,
       birthday: createUserDto.birthday
     })
+
+    return user.id
   }
 
   public async hashPassword(password: string, salt: string): Promise<string> {
@@ -61,22 +64,36 @@ export class UsersService {
     }
   }
 
+  public async fullNameAndTelCheck(fullName: string, tel: string): Promise<User | null> {
+    const existing = await this.user.findOne({
+      where: { fullName, tel } // 이름과 전화번호 모두 일치한지 체크
+    })
+
+    if (!existing) {
+      throw new ConflictException({
+        success: false,
+        message: `친구 추가하려는 사용자 정보를 다시 확인해주세요.`
+      })
+    }
+    return existing
+  }
+
   public async findAllUser(): Promise<User[]> {
     return await this.user.find()
   }
 
-  public async getOneUser(id: number): Promise<void | User> {
+  public async getOneUser(id: number): Promise<User> {
     return await this.user.findOne({
-      where: { 
-        id 
+      where: {
+        id
       }
     })
   }
 
   public async updateUserStatus(id: number, updateUserDto: UpdateUserDto): Promise<void> {
     const { ...update } = updateUserDto
-    
-    if(update.password) {
+
+    if (update.password) {
       const salt = await bcrypt.genSalt()
 
       update.password = await this.hashPassword(update.password, salt)
@@ -90,22 +107,20 @@ export class UsersService {
   }
 
   public async findUserByLogin(login: string, secret = false): Promise<User | undefined> {
-    return await this.user.findOne({
-      where: [
-        { email: login },
-        { tel: login },
-        { username: login }
-      ],
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        tel: true,
-        fullName: true,
-        statusMessage: true,
-        birthday: true,
-        password: secret
-      }
-    }) ?? undefined
+    return (
+      (await this.user.findOne({
+        where: [{ email: login }, { tel: login }, { username: login }],
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          tel: true,
+          fullName: true,
+          statusMessage: true,
+          birthday: true,
+          password: secret
+        }
+      })) ?? undefined
+    )
   }
 }
