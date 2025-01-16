@@ -25,6 +25,6 @@ export class Messages extends BaseEntity {
   @ManyToOne(() => Chat, (chat) => chat.messages, { onDelete: 'CASCADE' })
   public readonly chat: Chat
 
-  @ManyToOne(() => User, (user) => user.messages)
+  @ManyToOne(() => User, (user) => user.messages, { onDelete: 'CASCADE' })
   public readonly author: User
 }

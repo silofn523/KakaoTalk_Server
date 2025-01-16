@@ -68,7 +68,7 @@ export class User extends BaseEntity {
   @JoinTable()
   public readonly chats: Chat[]
 
-  @OneToMany(() => Messages, (message) => message.author)
+  @OneToMany(() => Messages, (message) => message.author, { cascade: true })
   public readonly messages: Messages
 
   @OneToMany(() => Friend, (friend) => friend.user, { eager: true })

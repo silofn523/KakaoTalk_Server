@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body, UseGuards, Headers, Req } from '@nestjs/common'
+import { Controller, Get, Post, Body, UseGuards, Headers, Req, ValidationPipe } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { LoginDto } from './dto/Login.Dto'
 import { Request } from 'express'
@@ -15,7 +15,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  public async loginUser(@Body() dto: LoginDto): Promise<{
+  public async loginUser(@Body(ValidationPipe) dto: LoginDto): Promise<{
     success: boolean
     accessToken?: string
     refreshToken?: string

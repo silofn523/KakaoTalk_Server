@@ -8,6 +8,7 @@ import { MessagesService } from './messages/messages.service'
 import { UsersService } from 'src/users/users.service'
 import { InviteUserDto } from './dto/invite-user.dto'
 import { RoomTypeEnum } from 'src/util/enum/roomType.emum'
+import { ValidationPipe } from '@nestjs/common'
 
 @WebSocketGateway({
   namespace: 'chats'
@@ -20,23 +21,29 @@ export class ChatsGateway implements OnGatewayConnection {
   ) {}
 
   @WebSocketServer()
-  public server: Server
+  private server: Server
+  public onlineUsers = new Set()
 
-  public handleConnection(socket: Socket) {
+  // onConnection
+  handleConnection(socket: Socket) {
+    const userId = socket.handshake.query.userId as string
+    this.onlineUsers.add(userId)
+    this.server.emit('onlineUsers', Array.from(this.onlineUsers))
+
     console.log(`on connect called : ${socket.id}`)
   }
 
-  @SubscribeMessage('enter_chat')
-  public async enterChat(@MessageBody() dto: EnterChatDto, @ConnectedSocket() socket: Socket) {
-    const user = await this.usersService.getOneUser(dto.userId)
+  // onDisconnect
+  handleDisconnect(socket: Socket) {
+    const userId = socket.handshake.query.userId
+    this.onlineUsers.delete(userId)
+    this.server.emit('onlineUsers', Array.from(this.onlineUsers))
 
-    if (!user) {
-      throw new WsException({
-        success: false,
-        message: `존재하지 않는 사용자 입니다. User ID : ${dto.userId}`
-      })
-    }
-    
+    console.log(`Disconnect called : ${socket.id}`)
+  }
+
+  @SubscribeMessage('enter_chat')
+  public async enterChat(@MessageBody(ValidationPipe) dto: EnterChatDto, @ConnectedSocket() socket: Socket) {
     for (const chatId of dto.chatId) {
       const exists = await this.chatsService.checkIfChatExists(chatId)
 
@@ -46,22 +53,13 @@ export class ChatsGateway implements OnGatewayConnection {
           message: `존재하지 않는 채팅방 입니다. Chat ID : ${chatId}`
         })
       }
-      const usersInChat = await this.chatsService.findUsersInChat(chatId)
-      const isUserInChat = usersInChat.some((u) => u.id === user.id)
-
-      if (!isUserInChat) {
-        throw new WsException({
-          success: false,
-          message: `채팅방에 없는 사용자 입니다. User ID : ${dto.userId}, Chat ID : ${chatId}`
-        })
-      }
     }
 
     socket.join(dto.chatId.map((x) => x.toString()))
   }
 
   @SubscribeMessage('send_message')
-  public async sendMessage(@MessageBody() dto: CreateMessageDto, @ConnectedSocket() socket: Socket) {
+  public async sendMessage(@MessageBody(ValidationPipe) dto: CreateMessageDto, @ConnectedSocket() socket: Socket) {
     console.log(dto.message)
 
     const chatExists = await this.chatsService.checkIfChatExists(dto.chatId)
@@ -95,7 +93,7 @@ export class ChatsGateway implements OnGatewayConnection {
   }
 
   @SubscribeMessage('invite_user')
-  public async inviteUser(@MessageBody() inviteDto: InviteUserDto, @ConnectedSocket() _socket: Socket) {
+  public async inviteUser(@MessageBody(ValidationPipe) inviteDto: InviteUserDto, @ConnectedSocket() _socket: Socket) {
     const { chatId, userId } = inviteDto
 
     const chatExists = await this.chatsService.checkIfChatExists(chatId)
@@ -124,18 +122,13 @@ export class ChatsGateway implements OnGatewayConnection {
 
     await this.chatsService.addUserToChat(inviteDto)
 
-    const messageDto: CreateMessageDto = {
-      chatId,
-      authorId: userId,
-      message: `${user.fullName}님이 초대되었습니다`
-    }
-    const message = await this.messagesService.createMessage(messageDto)
+    const systemMessage = `${user.fullName}님이 초대되었습니다`
 
-    this.server.to(chatId.toString()).emit('receive_message', message.message)
+    this.server.to(chatId.toString()).emit('receive_message', systemMessage)
   }
 
   @SubscribeMessage('leave_chat')
-  public async leaveChat(@MessageBody() leaveDto: InviteUserDto, @ConnectedSocket() socket: Socket) {
+  public async leaveChat(@MessageBody(ValidationPipe) leaveDto: InviteUserDto, @ConnectedSocket() socket: Socket) {
     const { chatId, userId } = leaveDto
 
     const chatExists = await this.chatsService.checkIfChatExists(chatId)
@@ -155,16 +148,20 @@ export class ChatsGateway implements OnGatewayConnection {
       })
     }
 
+    const isParticipant = chatExists.users.some((participant) => participant.id === leaveDto.userId)
+
+    if (!isParticipant) {
+      throw new WsException({
+        success: false,
+        message: `해당 채팅방에 참여하지 않은 사용자입니다.`
+      })
+    }
+
     await this.chatsService.removeUserFromChat(leaveDto)
 
-    const messageDto: CreateMessageDto = {
-      chatId,
-      authorId: userId,
-      message: `${user.fullName}님이 나갔습니다`
-    }
-    const message = await this.messagesService.createMessage(messageDto)
+    const systemMessage = `${user.fullName}님이 나갔습니다`
 
-    this.server.to(chatId.toString()).emit('receive_message', message.message)
+    this.server.to(chatId.toString()).emit('receive_message', systemMessage)
     socket.leave(chatId.toString())
   }
 }
