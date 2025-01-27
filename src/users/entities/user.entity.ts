@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { IsEmail, IsNotEmpty, IsOptional, IsPhoneNumber, IsString, Matches, MaxLength, MinLength } from 'class-validator'
+import { IsEmail, IsNotEmpty, IsOptional, IsPhoneNumber, IsString, MaxLength, MinLength } from 'class-validator'
 import { Chat } from 'src/chats/entities/chat.entity'
 import { Messages } from 'src/chats/messages/entities/messages.entity'
 import { Friend } from 'src/friend/entities/friend.entity'
@@ -9,57 +9,77 @@ import { BaseEntity, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGe
   name: 'users'
 })
 export class User extends BaseEntity {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({
+    name: 'user_id',
+    type: 'integer'
+  })
   public readonly id: number
 
-  @Column({ unique: true })
+  @Column({
+    name: 'username',
+    unique: true,
+    nullable: false,
+    type: 'varchar'
+  })
   @IsString()
   @MinLength(4)
   @MaxLength(15)
-  @IsNotEmpty()
   public readonly username: string // 고유 아이디
 
-  @Column()
+  @Column({
+    name: 'password',
+    type: 'varchar',
+    nullable: false
+  })
   @IsString()
-  @IsNotEmpty()
   @MinLength(8)
   @MaxLength(20)
-  @Matches(/^[a-z A-Z 0-9 !? @]*$/, {
-    message: 'password only accepts english and number and !? and @'
-  })
   public readonly password: string
 
-  @Column({ unique: true })
+  @Column({
+    name: 'email',
+    type: 'varchar',
+    unique: true,
+    nullable: false
+  })
   @IsEmail()
   @IsString()
-  @IsNotEmpty()
-  @Matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
-    message: 'email :('
-  })
   public readonly email: string
 
-  @Column({ unique: true })
-  @IsNotEmpty()
-  @IsPhoneNumber('KR') // 'KR'은 대한민국의 국가 코드
-  @Matches(/^010\d{7,8}$/, {
-    message: 'Phone number must start with 010 and contain 10 or 11 digits'
+  @Column({
+    name: 'tel',
+    type: 'varchar',
+    nullable: false,
+    unique: true
   })
+  @IsPhoneNumber('KR') // 'KR'은 대한민국의 국가 코드
   public readonly tel: string
 
-  @Column()
+  @Column({
+    name: 'full_name',
+    type: 'varchar',
+    nullable: false
+  })
   @IsString()
   @MinLength(1)
   @MaxLength(20)
-  @IsNotEmpty()
   public readonly fullName: string // 이름
 
-  @Column({ nullable: true })
+  @Column({ 
+    name: 'status_message',
+    type: 'varchar',
+    nullable: true 
+  })
   @IsOptional() // 상태메시지는 입력이 선택
   @IsString()
   @MaxLength(255)
   public readonly statusMessage: string // 상태메시지
 
-  @Column()
+  @Column({
+    name: 'birthday',
+    type: 'varchar',
+    nullable: false
+  })
   @IsString({ message: 'birthday must be a valid ISO 8601 date string :(' })
   @IsNotEmpty()
   public readonly birthday: Date // 생일

@@ -5,14 +5,20 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Friend } from './entities/friend.entity'
 import { Repository } from 'typeorm'
 import { StatusEnum } from 'src/util/enum/status.enum'
+import { User } from 'src/users/entities/user.entity'
 
 @Injectable()
 export class FriendService {
   constructor(
     @InjectRepository(Friend)
-    private readonly friend: Repository<Friend>
+    private readonly friend: Repository<Friend>,
+    @InjectRepository(User)
+    private readonly user: Repository<User>
   ) {}
 
+  /**
+   * 친구 요청 생성 (보낸 사람과 받은 사람 모두 저장)
+   */
   public async addFriend(dto: CreateFriendDto, status: StatusEnum, friendId: number): Promise<void> {
     await this.friend.insert({
       fullName: dto.fullName,
@@ -23,6 +29,9 @@ export class FriendService {
     })
   }
 
+  /**
+   * 친구 관계 중복 확인
+   */
   public async isAlreadyFriend(userId: number, friendId: number): Promise<void> {
     const existingFriend = await this.friend.findOne({
       where: [

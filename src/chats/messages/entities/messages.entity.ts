@@ -6,19 +6,33 @@ import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 't
 
 @Entity()
 export class Messages extends BaseEntity {
-  @PrimaryGeneratedColumn()
-  @IsNumber()
+  @PrimaryGeneratedColumn({
+    name: 'messages_id',
+    type: 'integer'
+  })
   public readonly id: number
 
-  @Column()
+  @Column({
+    name: 'chatId',
+    type: 'integer',
+    nullable: false
+  })
   @IsNumber()
   public readonly chatId: number
 
-  @Column()
+  @Column({
+    name: 'authorId',
+    type: 'integer',
+    nullable: false
+  })
   @IsNumber()
   public readonly authorId: number
 
-  @Column()
+  @Column({
+    name: 'message',
+    type: 'varchar',
+    nullable: false
+  })
   @IsString()
   public readonly message: string
 

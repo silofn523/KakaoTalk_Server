@@ -1,40 +1,56 @@
-import { IsNotEmpty, IsNumber, IsPhoneNumber, IsString, Matches, MaxLength, MinLength } from 'class-validator'
+import { IsNotEmpty, IsNumber, IsPhoneNumber, IsString, MaxLength, MinLength } from 'class-validator'
 import { User } from 'src/users/entities/user.entity'
 import { StatusEnum } from 'src/util/enum/status.enum'
 import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()
 export class Friend extends BaseEntity {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({
+    name: 'friend_id',
+    type: 'integer'
+  })
   public readonly id: number
 
-  @Column()
+  @Column({
+    name: 'full_name',
+    type: 'varchar',
+    nullable: false
+  })
   @IsString()
   @MinLength(1)
   @MaxLength(20)
-  @IsNotEmpty()
   public readonly fullName: string
 
-  @Column()
+  @Column({
+    name: 'tel',
+    type: 'varchar',
+    nullable: false
+  })
   @IsNotEmpty()
   @IsPhoneNumber('KR')
-  @Matches(/^010\d{7,8}$/, {
-    message: 'Phone number must start with 010 and contain 10 or 11 digits'
-  })
   public readonly tel: string
 
   @Column({
+    name: 'status',
     type: 'enum',
-    enum: StatusEnum
+    enum: StatusEnum,
+    nullable: false
   })
-  @IsNotEmpty()
   public readonly status: StatusEnum
 
-  @Column()
+  @Column({
+    name: 'userId',
+    type: 'integer',
+    nullable: false
+  })
   @IsNumber()
   public readonly userId: number
 
-  @Column()
+  @Column({
+    name: 'friendId',
+    type: 'integer',
+    nullable: false
+  })
   @IsNumber()
   public readonly friendId: number
 

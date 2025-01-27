@@ -6,13 +6,25 @@ import { RoomTypeEnum } from 'src/util/enum/roomType.emum'
 
 @Entity()
 export class Chat extends BaseEntity {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({
+    name: 'chat_id',
+    type: 'integer'
+  })
   public readonly id: number
 
-  @Column({ nullable: true })
+  @Column({ 
+    name: 'room_name',
+    type: 'varchar',
+    nullable: true 
+  })
   public readonly roomName: string
 
-  @Column()
+  @Column({
+    name: 'room_type',
+    type: 'enum',
+    enum: RoomTypeEnum,
+    nullable: false
+  })
   public readonly roomType: RoomTypeEnum
 
   @ManyToMany(() => User, (user) => user.chats, { onDelete: 'CASCADE', eager: true })

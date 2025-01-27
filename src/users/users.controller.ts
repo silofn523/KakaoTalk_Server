@@ -15,7 +15,7 @@ export class UsersController {
   ) {}
 
   @Post('/signup')
-  public async createUser(@Body(ValidationPipe) createUserDto: CreateUserDto): Promise<{ success: boolean; body: number }> {
+  public async createUser(@Body(ValidationPipe) createUserDto: CreateUserDto): Promise<{ success: boolean; userId: number }> {
     const { tel, username, email } = createUserDto
 
     await this.usersService.checkUserTelAndUsernameAndEmail(tel, username, email)
@@ -23,7 +23,7 @@ export class UsersController {
 
     return {
       success: true,
-      body: userId
+      userId: userId
     }
   }
 
